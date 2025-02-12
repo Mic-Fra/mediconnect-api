@@ -11,8 +11,8 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: { email: string, password: string }, @Res() res: Response) {
     try {
-      const user = await this.authService.loginUser(loginDto.email, loginDto.password);
-      const { access_token, refresh_token } = await this.authService.generateTokens(user);
+      const { access_token} = await this.authService.validateUser(loginDto.email, loginDto.password);
+      
 
       res.cookie('access_token', access_token, {
         httpOnly: true,
@@ -21,12 +21,6 @@ export class AuthController {
         maxAge: 3600 * 1000, // 1 hour
       });
 
-      res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
       
       return res.status(HttpStatus.OK).json({ message: 'Login successful' });
     } catch (err) {

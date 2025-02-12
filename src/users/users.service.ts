@@ -131,7 +131,7 @@ export class UsersService {
     limit,
   }: {
     name?: string;
-    specialty?: string;
+    specialty?: string | string[];
     page: number;
     limit: number;
   }) {
@@ -148,25 +148,34 @@ export class UsersService {
     }
 
     if (specialty) {
-      queryBuilder.andWhere(
-        `(
-          EXISTS (
-            SELECT 1 FROM unnest(user.general) AS g WHERE LOWER(g) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.surgical) AS s WHERE LOWER(s) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.medical) AS m WHERE LOWER(m) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.pediatric) AS p WHERE LOWER(p) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.other) AS o WHERE LOWER(o) LIKE LOWER(:specialty)
-          )
-        )`,
-        { specialty: `%${specialty.toLowerCase()}%` }
-      );
-    }
+      // Ensure specialty is always an array
+      const specialtyArray = Array.isArray(specialty)
+        ? specialty
+        : specialty.includes(",")
+        ? specialty.split(",").map((s) => s.trim()) // Convert comma-separated values into an array
+        : [specialty];
+
     
-    
+      // Loop through each selected specialty and ensure it exists
+      specialtyArray.forEach((spec, index) => {
+        queryBuilder.andWhere(
+          `(
+            EXISTS (
+              SELECT 1 FROM unnest(user.general) AS g WHERE LOWER(g) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.surgical) AS s WHERE LOWER(s) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.medical) AS m WHERE LOWER(m) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.pediatric) AS p WHERE LOWER(p) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.other) AS o WHERE LOWER(o) ILIKE :specialty${index}
+            )
+          )`,
+          { [`specialty${index}`]: `%${spec.toLowerCase()}%` }
+        );
+      });
+    }  
 
     // Pagination
     const [data, total] = await queryBuilder
@@ -208,22 +217,33 @@ export class UsersService {
     }
 
     if (specialty) {
-      queryBuilder.andWhere(
-        `(
-          EXISTS (
-            SELECT 1 FROM unnest(user.general) AS g WHERE LOWER(g) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.surgical) AS s WHERE LOWER(s) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.medical) AS m WHERE LOWER(m) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.pediatric) AS p WHERE LOWER(p) LIKE LOWER(:specialty)
-          ) OR EXISTS (
-            SELECT 1 FROM unnest(user.other) AS o WHERE LOWER(o) LIKE LOWER(:specialty)
-          )
-        )`,
-        { specialty: `%${specialty.toLowerCase()}%` }
-      );
+      // Ensure specialty is always an array
+      const specialtyArray = Array.isArray(specialty)
+        ? specialty
+        : specialty.includes(",")
+        ? specialty.split(",").map((s) => s.trim()) // Convert comma-separated values into an array
+        : [specialty];
+
+    
+      // Loop through each selected specialty and ensure it exists
+      specialtyArray.forEach((spec, index) => {
+        queryBuilder.andWhere(
+          `(
+            EXISTS (
+              SELECT 1 FROM unnest(user.general) AS g WHERE LOWER(g) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.surgical) AS s WHERE LOWER(s) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.medical) AS m WHERE LOWER(m) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.pediatric) AS p WHERE LOWER(p) ILIKE :specialty${index}
+            ) OR EXISTS (
+              SELECT 1 FROM unnest(user.other) AS o WHERE LOWER(o) ILIKE :specialty${index}
+            )
+          )`,
+          { [`specialty${index}`]: `%${spec.toLowerCase()}%` }
+        );
+      });
     }
     
     

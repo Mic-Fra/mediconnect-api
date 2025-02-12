@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEmail, IsOptional, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsEmail, IsOptional, IsDateString, IsArray } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -92,5 +92,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   other: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true }) // Ensures every item is a string
+  specialty?: string[];
 
 }

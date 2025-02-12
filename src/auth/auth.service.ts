@@ -1,5 +1,5 @@
 // src/auth/auth.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Auth } from './auth.entity';
@@ -15,18 +15,32 @@ export class AuthService {
   ) {}
 
   // Login and validate user credentials
-  async loginUser(email: string, password: string): Promise<Auth> {
-    const user = await this.authRepository.findOne({ where: { email } });
+  async validateUser(email: string, password: string) {
+    console.log("Checking user login for:", email); // 🔹 Debug log
+
+    const user = await this.authRepository.findOne({where:{email}});
+
     if (!user) {
-      throw new Error('User not found');
+      console.error("User not found for email:", email);
+      throw new UnauthorizedException("Invalid credentials");
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      throw new Error('Invalid password');
+    console.log("User found:", user); // 🔹 Debug log
+
+    // 🔹 Compare hashed password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log("Password validation:", isPasswordValid); // 🔹 Debug log
+
+    if (!isPasswordValid) {
+      console.error("Incorrect password for:", email);
+      throw new UnauthorizedException("Invalid credentials");
     }
 
-    return user;
+    // 🔹 Generate JWT token
+    const payload = { id: user.id, email: user.email };
+    const access_token = this.jwtService.sign(payload);
+
+    return { access_token };
   }
 
   // Generate both Access and Refresh Tokens
